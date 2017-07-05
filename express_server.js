@@ -44,17 +44,39 @@ app.post("/urls", (req, res) => {
   // console.log(req.body);  // debug statement to see POST parameters
   urlDatabase[urlKey] = req.body['longURL'];
   console.log(urlDatabase);
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  res.send("http://localhost:8080/urls/" + urlKey); // Respond with 'Ok' (we will replace this)
 });
+
+app.get("/u/:shortURL", (req, res) => {
+    // let longURL = ;
+    // console.log(longURL);
+  res.redirect(longURL);
+});
+
+// Delete URL
+app.post("/urls/:id/delete", (req, res) => {
+  // console.log(req.params.id);
+  let shortURL = req.params.id;
+  // console.log(shortURL);
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
+});
+
+// Update the long URL
+app.post("/urls/:id", (req, res) => {
+  let shortURL = req.params.id;
+  let longURL = req.body.longURL;
+  // console.log(shortURL);
+  // console.log(longURL);
+  urlDatabase[shortURL] = longURL
+  res.redirect("/urls");
+})
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-
-
-
-
+// Generate random 6 character string for short URL
 function generateRandomString(length, chars) {
   var result = '';
   for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];

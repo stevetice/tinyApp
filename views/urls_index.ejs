@@ -7,17 +7,22 @@
     <!-- Add your EJS code here -->
   <header>
         <% include partials/_header %>
-    </header>
-  <ul>
-    <% for (var key in urls) { %>
-         <% if (urls.hasOwnProperty(key)) { %>
-           <li><%= key + " -> " + urls[key]; %></li>
+  </header>
+
+    <ul>
+      <% for (var key in urls) { %>
+        <% if (urls.hasOwnProperty(key)) { %>
+          <li><%= key + " -> " + urls[key]; %>
+            <a href="urls/<%= key %>"> Edit </a>
+              <form method="POST" action="/urls/<%= key; %>/delete">...
+                <input type="submit" value="Delete">
+              </form>
+          </li>
         <%  } %>
-       <% } %>
-  </ul>
-    <a href="shorten"> shorten url</a>
-
-
-
+      <% } %>
+    </ul>
+    <ul>
+      <li><a href="shorten"> Shorten </a></li>
+    </ul>
 </body>
 </html>
