@@ -6,7 +6,7 @@
 <body>
     <!-- Add your EJS code here -->
   <header>
-        <% include partials/_header %>
+    <% include partials/_header %>
   </header>
 
     <ul>
@@ -22,7 +22,10 @@
       <% } %>
     </ul>
     <ul>
-      <li><a href="shorten"> Shorten </a></li>
+      <form method="GET" action="/urls/new">...
+        <input type="submit" value="Add New">
+      </form>
+      <!-- <li><a href="shorten"> Shorten </a></li> -->
     </ul>
 </body>
 </html>

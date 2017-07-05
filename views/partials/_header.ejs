@@ -1,3 +1,14 @@
 <!DOCTYPE html>
+<html lang="en">
+
 
 <h1> HEADER TITLE </h1>
+  <li><% if (username) { %>
+    Username: <%= username %>
+  <% } else { %>
+    <form action="/login" method="POST" style="margin:10px;">
+      <input id="userID" type="text" name="username" placeholder="Input username" style="width: 300px">
+      <input type="submit" value="Login">
+  </form>
+  <% } %>
+  </li>
