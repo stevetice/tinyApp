@@ -2,6 +2,7 @@ var express = require("express");
 var app = express();
 var PORT = process.env.PORT || 8080; // default port 8080
 
+// Set view engine
 app.set("view engine", "ejs");
 
 const cookieParser = require("cookie-parser");
@@ -15,14 +16,24 @@ var urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+// Listening on port...
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
+
 app.get("/", (req, res) => {
   res.end("Hello!");
+});
+
+app.get("/hello", (req, res) => {
+  res.end("<html><body>Hello <b>World</b></body></html>\n");
 });
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+// List long and short URLs
 app.get("/urls", (req, res) => {
   let templateVars = {
     username: req.cookies["username"],
@@ -30,12 +41,14 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+// Type in long URL to creat new short URL
 app.get("/urls/new", (req, res) => {
   let templateVars = {
     username: req.cookies["username"]
   };
   res.render("urls_new", templateVars);
 });
+
 
 app.get("/urls/:id", (req, res) => {
   let templateVars = {
@@ -46,9 +59,6 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-app.get("/hello", (req, res) => {
-  res.end("<html><body>Hello <b>World</b></body></html>\n");
-});
 
 // Generate random unique key for shortURL
 app.post("/urls", (req, res) => {
@@ -57,20 +67,22 @@ app.post("/urls", (req, res) => {
   // console.log(req.body);  // debug statement to see POST parameters
   urlDatabase[urlKey] = req.body['longURL'];
   console.log(urlDatabase);
-  res.send("http://localhost:8080/urls/" + urlKey); // Respond with 'Ok' (we will replace this)
+  res.redirect("http://localhost:8080/urls/" + urlKey); // Respond with 'Ok' (we will replace this)
 });
 
+
+
 app.get("/u/:shortURL", (req, res) => {
-    // let longURL = ;
-    // console.log(longURL);
+  // let shortURL = req.params.id;
+  console.log("shortURL "+req.params.shortURL);
+  let longURL = urlDatabase[req.params.shortURL];
+  console.log("longURL  "+longURL);
   res.redirect(longURL);
 });
 
 // Delete URL
 app.post("/urls/:id/delete", (req, res) => {
-  // console.log(req.params.id);
   let shortURL = req.params.id;
-  // console.log(shortURL);
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
@@ -79,29 +91,24 @@ app.post("/urls/:id/delete", (req, res) => {
 app.post("/urls/:id", (req, res) => {
   let shortURL = req.params.id;
   let longURL = req.body.longURL;
-  // console.log(shortURL);
-  // console.log(longURL);
   urlDatabase[shortURL] = longURL
   res.redirect("/urls");
-})
+});
 
 // Allow user to add username
 app.post("/login", (req ,res) => {
   let username = req.body.username;
   res.cookie("username", username);
-  console.log(username);
+  // console.log(username);
   res.redirect("/urls");
-})
+});
 
 // Allow user to logout & clear username. Redirect to /urls where they may input new username
 app.post("/logout", (req, res) => {
   res.clearCookie("username");
   res.redirect("/urls");
-})
-
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
 });
+
 
 // Generate random 6 character string for short URL
 function generateRandomString(length, chars) {
