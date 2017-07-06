@@ -76,7 +76,7 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
-
+// GO to page for shortURL
 app.get("/urls/:id", (req, res) => {
   let templateVars = {
     username: req.cookies["username"],
@@ -97,22 +97,35 @@ app.post("/urls", (req, res) => {
   res.redirect("http://localhost:8080/urls/" + urlKey); // Respond with 'Ok' (we will replace this)
 });
 
-// User register
+// User registration
 app.post("/register", (req, res) => {
-  let templateVars =
-  // let userKey = generateRandomString(6, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-  console.log(userKey);
-  let userEmail = req.body.userEmail;
-  let userPass = req.body.userPass;
-  console.log(userEmail);
-  console.log(userPass);
-
+  let userKey = generateRandomString(6, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    console.log(userKey);
+  // let users[userKey] = {
+  //   id : userKey,
+  //   email : req.body.userEmail,
+  //   password : req.body.userPass
+  // }
+  // if (USER) {
+  //  console.log("FOUND USER: ", USER);
+  // res.redirect("/urls");
+  // } else {
+  //   // Send message USER NOT FOUND? , INCORRECT PASSWORD
+  //   res.redirect("/register");
+  // }
+  // console.log(userEmail);
+  // console.log(userPass);
+  users[userKey] = {id: userKey, email: req.body.email, password: req.body.password}
+  res.cookie("userKey", userKey);
+  console.log(users[userKey]);
+  console.log(users);
   // let templateVars = {
   //   username: req.cookies["username"],
   //   urls: urlDatabase };
-  res.render("/urls", templateVars);
+  res.redirect("/urls", 302);
 });
 
+// Redirect from shortURL to longURL
 app.get("/u/:shortURL", (req, res) => {
   // let shortURL = req.params.id;
   console.log("shortURL "+req.params.shortURL);
@@ -138,8 +151,8 @@ app.post("/urls/:id", (req, res) => {
 
 // Allow user to add username
 app.post("/login", (req ,res) => {
-  let username = req.body.username;
-  res.cookie("username", username);
+  let userEmail = req.body.email;
+  res.cookie("email", userEmail);
   // console.log(username);
   res.redirect("/urls");
 });
@@ -153,7 +166,11 @@ app.post("/logout", (req, res) => {
 
 // Generate random 6 character string for short URL
 function generateRandomString(length, chars) {
-  var result = '';
-  for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+  let result = '';
+  for (let i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
   return result;
 }
+
+// function findUser (email, password) {
+//   return users.find((user) => user.email == email && user.password == password);
+// };
