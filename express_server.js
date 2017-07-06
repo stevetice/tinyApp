@@ -39,14 +39,6 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.get("/", (req, res) => {
-  res.end("Hello!");
-});
-
-app.get("/hello", (req, res) => {
-  res.end("<html><body>Hello <b>World</b></body></html>\n");
-});
-
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -54,24 +46,38 @@ app.get("/urls.json", (req, res) => {
 // List long and short URLs
 app.get("/urls", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"],
-    urls: urlDatabase };
+    username: req.cookies["userKey"],
+    urls: urlDatabase,
+    user: users[req.cookies["userKey"]]
+  };
   res.render("urls_index", templateVars);
 });
 
 // User registration page
 app.get("/register", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"],
-    urls: urlDatabase };
+    username: req.cookies["userKey"],
+    urls: urlDatabase,
+    user: users[req.cookies["userKey"]]
+  };
+  console.log(templateVars);
+  console.log(users);
   res.render("urls_register", templateVars);
 });
 
+// User Login page
+// app.get("/login", (req, res) => {
+//   let templateVars = {
+//     userKey: req.cookies["userKey"],
+//     urls: urlDatabase };
+//   res.render("/urls", templateVars);
+// });
 
 // Type in long URL to creat new short URL
 app.get("/urls/new", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"]
+    username: req.cookies["userKey"],
+    user: users[req.cookies["userKey"]]
   };
   res.render("urls_new", templateVars);
 });
@@ -79,13 +85,13 @@ app.get("/urls/new", (req, res) => {
 // GO to page for shortURL
 app.get("/urls/:id", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"],
+    username: req.cookies["userKey"],
     shortURL: req.params.id,
-    longURL: urlDatabase[req.params.id]
+    longURL: urlDatabase[req.params.id],
+    user: users[req.cookies["userKey"]]
   };
   res.render("urls_show", templateVars);
 });
-
 
 // Generate random unique key for shortURL
 app.post("/urls", (req, res) => {
@@ -100,21 +106,7 @@ app.post("/urls", (req, res) => {
 // User registration
 app.post("/register", (req, res) => {
   let userKey = generateRandomString(6, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    console.log(userKey);
-  // let users[userKey] = {
-  //   id : userKey,
-  //   email : req.body.userEmail,
-  //   password : req.body.userPass
-  // }
-  // if (USER) {
-  //  console.log("FOUND USER: ", USER);
-  // res.redirect("/urls");
-  // } else {
-  //   // Send message USER NOT FOUND? , INCORRECT PASSWORD
-  //   res.redirect("/register");
-  // }
-  // console.log(userEmail);
-  // console.log(userPass);
+   // Check if user email already exists in database
   for (let userID in users) {
     if (users.hasOwnProperty(userID)) {
       if (users[userID].email === req.body.email) {
@@ -123,7 +115,7 @@ app.post("/register", (req, res) => {
       }
     };
   }
-
+  // Check if email or password is left blank. Else add new user.
   if (req.body.email == '') {
     res.sendStatus(400); //add error message
     return;
@@ -132,9 +124,7 @@ app.post("/register", (req, res) => {
     return;
   } else {
     users[userKey] = {id: userKey, email: req.body.email, password: req.body.password}
-      res.cookie("userKey", userKey);
-      console.log(users[userKey]);
-      console.log(users);
+    res.cookie("userKey", userKey);
     res.redirect("/urls", 302);
   }
 });
@@ -142,9 +132,9 @@ app.post("/register", (req, res) => {
 // Redirect from shortURL to longURL
 app.get("/u/:shortURL", (req, res) => {
   // let shortURL = req.params.id;
-  console.log("shortURL "+req.params.shortURL);
+  // console.log("shortURL "+req.params.shortURL);
   let longURL = urlDatabase[req.params.shortURL];
-  console.log("longURL  "+longURL);
+  // console.log("longURL  "+longURL);
   res.redirect(longURL);
 });
 
@@ -176,7 +166,6 @@ app.post("/logout", (req, res) => {
   res.clearCookie("username");
   res.redirect("/urls");
 });
-
 
 // Generate random 6 character string for short URL
 function generateRandomString(length, chars) {

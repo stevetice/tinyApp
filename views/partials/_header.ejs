@@ -3,8 +3,8 @@
 
 
 <h1> HEADER TITLE </h1>
-  <li><% if (username) { %>
-    Username: <%= username %>
+  <li><% if (user) { %>
+    Username: <%= user.email %>
     <form action="/logout" method="POST">
       <input type="submit" value="Logout">
     </form>
