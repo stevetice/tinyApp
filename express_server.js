@@ -16,6 +16,24 @@ var urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  },
+  "testUserID": {
+    id: "testUserRandomID",
+    email: "testUser@example.com",
+    password: "snaggle_hoof"
+  }
+}
+
 // Listening on port...
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
@@ -40,6 +58,15 @@ app.get("/urls", (req, res) => {
     urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
+
+// User registration page
+app.get("/register", (req, res) => {
+  let templateVars = {
+    username: req.cookies["username"],
+    urls: urlDatabase };
+  res.render("urls_register", templateVars);
+});
+
 
 // Type in long URL to creat new short URL
 app.get("/urls/new", (req, res) => {
@@ -70,7 +97,21 @@ app.post("/urls", (req, res) => {
   res.redirect("http://localhost:8080/urls/" + urlKey); // Respond with 'Ok' (we will replace this)
 });
 
+// User register
+app.post("/register", (req, res) => {
+  let templateVars =
+  // let userKey = generateRandomString(6, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+  console.log(userKey);
+  let userEmail = req.body.userEmail;
+  let userPass = req.body.userPass;
+  console.log(userEmail);
+  console.log(userPass);
 
+  // let templateVars = {
+  //   username: req.cookies["username"],
+  //   urls: urlDatabase };
+  res.render("/urls", templateVars);
+});
 
 app.get("/u/:shortURL", (req, res) => {
   // let shortURL = req.params.id;
