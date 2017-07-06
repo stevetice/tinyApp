@@ -115,14 +115,28 @@ app.post("/register", (req, res) => {
   // }
   // console.log(userEmail);
   // console.log(userPass);
-  users[userKey] = {id: userKey, email: req.body.email, password: req.body.password}
-  res.cookie("userKey", userKey);
-  console.log(users[userKey]);
-  console.log(users);
-  // let templateVars = {
-  //   username: req.cookies["username"],
-  //   urls: urlDatabase };
-  res.redirect("/urls", 302);
+  for (let userID in users) {
+    if (users.hasOwnProperty(userID)) {
+      if (users[userID].email === req.body.email) {
+        res.sendStatus(400); //add specific message
+      return;
+      }
+    };
+  }
+
+  if (req.body.email == '') {
+    res.sendStatus(400); //add error message
+    return;
+  } else if (req.body.password === '') {
+    res.sendStatus(400); //add error message
+    return;
+  } else {
+    users[userKey] = {id: userKey, email: req.body.email, password: req.body.password}
+      res.cookie("userKey", userKey);
+      console.log(users[userKey]);
+      console.log(users);
+    res.redirect("/urls", 302);
+  }
 });
 
 // Redirect from shortURL to longURL
