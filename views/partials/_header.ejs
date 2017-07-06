@@ -3,15 +3,14 @@
 
 
 <h1> HEADER TITLE </h1>
-  <li><% if (user) { %>
-    Username: <%= user.email %>
+  <ul>
+  <% if (user) { %>
+    <li>Username: <%= user.email %>
     <form action="/logout" method="POST">
       <input type="submit" value="Logout">
-    </form>
+    </form></li>
   <% } else { %>
-    <form action="/login" method="POST" style="margin:10px;">
-      <input id="userID" type="text" name="email" placeholder="Input username" style="width: 300px">
-      <input type="submit" value="Login">
-  </form>
+    <li><a href="login"> Login </a></li>
+    <li><a href="register"> Register </a></li>
   <% } %>
-  </li>
+  </ul>

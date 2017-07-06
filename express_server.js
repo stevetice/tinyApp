@@ -66,12 +66,14 @@ app.get("/register", (req, res) => {
 });
 
 // User Login page
-// app.get("/login", (req, res) => {
-//   let templateVars = {
-//     userKey: req.cookies["userKey"],
-//     urls: urlDatabase };
-//   res.render("/urls", templateVars);
-// });
+app.get("/login", (req, res) => {
+  let templateVars = {
+    username: req.cookies["userKey"],
+    urls: urlDatabase,
+    user: users[req.cookies["userKey"]]
+  };
+  res.render("urls_login", templateVars);
+});
 
 // Type in long URL to creat new short URL
 app.get("/urls/new", (req, res) => {
