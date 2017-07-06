@@ -93,6 +93,11 @@ app.post("/login", (req ,res) => {
   res.redirect("/urls");
 })
 
+// Allow user to logout & clear username. Redirect to /urls where they may input new username
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  res.redirect("/urls");
+})
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
