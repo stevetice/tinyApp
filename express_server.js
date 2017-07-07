@@ -11,9 +11,17 @@ app.use(cookieParser());
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
-var urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+const urlDatabase = {
+  "b2xVn2" : {
+    id: "b2xVn2",
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "userRandomID"
+  },
+  "9sm5xK" : {
+    id: "9sm5xK",
+    longURL: "http://www.google.com",
+    userID: "testUserID"
+  }
 };
 
 const users = {
@@ -50,7 +58,12 @@ app.get("/urls", (req, res) => {
     urls: urlDatabase,
     user: users[req.cookies["userKey"]]
   };
-  res.render("urls_index", templateVars);
+  let user = findLoggedInUser(req.cookies.userKey);
+    if (user) {
+      res.render("urls_index", templateVars);
+    } else {
+      res.redirect("login");
+    }
 });
 
 // User registration page
@@ -81,7 +94,12 @@ app.get("/urls/new", (req, res) => {
     username: req.cookies["userKey"],
     user: users[req.cookies["userKey"]]
   };
-  res.render("urls_new", templateVars);
+  let user = findLoggedInUser(req.cookies.userKey);
+    if (user) {
+      res.render("urls_new", templateVars);
+    } else {
+      res.redirect("/login");
+    }
 });
 
 // GO to page for shortURL
@@ -89,10 +107,15 @@ app.get("/urls/:id", (req, res) => {
   let templateVars = {
     username: req.cookies["userKey"],
     shortURL: req.params.id,
-    longURL: urlDatabase[req.params.id],
+    longURL: urlDatabase[req.params.id].longURL,
     user: users[req.cookies["userKey"]]
   };
-  res.render("urls_show", templateVars);
+  let user = findLoggedInUser(req.cookies.userKey);
+    if (user.id === urlDatabase[req.params.id].userID) {
+      urlDatabase[shortURL].longURL = longURL
+      res.render("urls_show", templateVars);
+    } else
+      res.sendStatus(403);
 });
 
 // Generate random unique key for shortURL
@@ -135,7 +158,7 @@ app.post("/register", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   // let shortURL = req.params.id;
   // console.log("shortURL "+req.params.shortURL);
-  let longURL = urlDatabase[req.params.shortURL];
+  let longURL = urlDatabase[req.params.shortURL].longURL;
   // console.log("longURL  "+longURL);
   res.redirect(longURL);
 });
@@ -143,15 +166,25 @@ app.get("/u/:shortURL", (req, res) => {
 // Delete URL
 app.post("/urls/:id/delete", (req, res) => {
   let shortURL = req.params.id;
-  delete urlDatabase[shortURL];
-  res.redirect("/urls");
+  let user = findLoggedInUser(req.cookies.userKey);
+    if (user.id === urlDatabase[shortURL].userID) {
+      delete urlDatabase[shortURL];
+      res.redirect("/urls");
+    } else {
+      res.sendStatus(403);
+    }
+
 });
 
 // Update the long URL
 app.post("/urls/:id", (req, res) => {
   let shortURL = req.params.id;
   let longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL
+  let user = findLoggedInUser(req.cookies.userKey);
+    if (user.id !== urlDatabase[shortURL].userID) {
+      res.sendStatus(403);
+    } else
+      urlDatabase[shortURL].longURL = longURL
   res.redirect("/urls");
 });
 
@@ -160,9 +193,9 @@ app.post("/login", (req ,res) => {
   let userEmail = req.body.email;
   let user = findUser(req.body.email, req.body.password);
   if (user === 'User not found') {
-    res.sendStatus(403)
+    res.sendStatus(403);
   } else if (user === 'Password incorrect') {
-    res.sendStatus(403)
+    res.sendStatus(403);
   } else {
     res.cookie("userKey", user.id);
     res.redirect("/urls", 302);
@@ -199,4 +232,16 @@ function findUser (email, password) {
   // };
   };
   return result;
+}
+
+
+// Find logged in user and return
+function findLoggedInUser (cookie) {
+  let foundUser;
+  for (let userID in users) {
+    if (users[userID].id === cookie) {
+      foundUser = users[userID];
+    }
+  }
+  return foundUser;
 }

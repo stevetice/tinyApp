@@ -12,7 +12,7 @@
     <ul>
       <% for (var key in urls) { %>
         <% if (urls.hasOwnProperty(key)) { %>
-          <li><%= key + " -> " + urls[key]; %>
+          <li><%= key + " -> " + urls[key].longURL; %>
             <a href="urls/<%= key %>"> Edit </a>
               <form method="POST" action="/urls/<%= key; %>/delete">...
                 <input type="submit" value="Delete">
