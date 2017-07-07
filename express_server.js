@@ -1,12 +1,19 @@
-var express = require("express");
-var app = express();
-var PORT = process.env.PORT || 8080; // default port 8080
+const express = require("express");
+const app = express();
+const PORT = process.env.PORT || 8080; // default port 8080
+const bcrypt = require('bcrypt');
 
 // Set view engine
 app.set("view engine", "ejs");
 
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
+
+const cookieSession = require("cookie-session");
+app.use(cookieSession({
+  name: 'session',
+  keys: ['n98ysdf76g4uhbt'],
+}));
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -28,17 +35,17 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("asd", 10)
   },
  "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("funk", 10)
   },
   "testUserID": {
     id: "testUserID",
     email: "test@example.com",
-    password: "asd"
+    password: bcrypt.hashSync("asd", 10)
   }
 };
 
@@ -53,17 +60,19 @@ app.get("/urls.json", (req, res) => {
 
 // List long and short URLs
 app.get("/urls", (req, res) => {
+  let user = findLoggedInUser(req.cookies.userKey);
+  if (!user) {
+    res.redirect("login");
+    return;
+  }
   let templateVars = {
     username: req.cookies["userKey"],
-    urls: urlDatabase,
-    user: users[req.cookies["userKey"]]
+    urls: urlsForUser(user.id),
+    user: user
   };
-  let user = findLoggedInUser(req.cookies.userKey);
-    if (user) {
-      res.render("urls_index", templateVars);
-    } else {
-      res.redirect("login");
-    }
+
+  res.render("urls_index", templateVars);
+
 });
 
 // User registration page
@@ -73,8 +82,7 @@ app.get("/register", (req, res) => {
     urls: urlDatabase,
     user: users[req.cookies["userKey"]]
   };
-  console.log(templateVars);
-  console.log(users);
+
   res.render("urls_register", templateVars);
 });
 
@@ -104,18 +112,26 @@ app.get("/urls/new", (req, res) => {
 
 // GO to page for shortURL
 app.get("/urls/:id", (req, res) => {
+  let user = findLoggedInUser(req.cookies.userKey);
+  if (!user) {
+      res.sendStatus(403);
+      return;
+  }
+  let shortURL = req.params.id;
+  let longURL = urlDatabase[shortURL].longURL
   let templateVars = {
     username: req.cookies["userKey"],
-    shortURL: req.params.id,
-    longURL: urlDatabase[req.params.id].longURL,
+    shortURL: shortURL,
+    longURL: longURL,
     user: users[req.cookies["userKey"]]
   };
-  let user = findLoggedInUser(req.cookies.userKey);
-    if (user.id === urlDatabase[req.params.id].userID) {
-      urlDatabase[shortURL].longURL = longURL
-      res.render("urls_show", templateVars);
-    } else
-      res.sendStatus(403);
+
+  if (user.id === urlDatabase[shortURL].userID) {
+    urlDatabase[shortURL].longURL = longURL
+    res.render("urls_show", templateVars);
+  } else {
+    res.sendStatus(403);
+  }
 });
 
 // Generate random unique key for shortURL
@@ -123,7 +139,7 @@ app.post("/urls", (req, res) => {
   let urlKey = generateRandomString(6, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
   // console.log(urlKey);
   // console.log(req.body);  // debug statement to see POST parameters
-  urlDatabase[urlKey] = req.body['longURL'];
+  urlDatabase[urlKey] = {id: urlKey, longURL: req.body['longURL'], userID: req.cookies.userKey}
   console.log(urlDatabase);
   res.redirect("http://localhost:8080/urls/" + urlKey); // Respond with 'Ok' (we will replace this)
 });
@@ -148,7 +164,8 @@ app.post("/register", (req, res) => {
     res.sendStatus(400); //add error message
     return;
   } else {
-    users[userKey] = {id: userKey, email: req.body.email, password: req.body.password}
+    let hashedPassword = bcrypt.hashSync(req.body.password, 10)
+    users[userKey] = {id: userKey, email: req.body.email, password: hashedPassword}
     res.cookie("userKey", userKey);
     res.redirect("/urls", 302);
   };
@@ -156,16 +173,19 @@ app.post("/register", (req, res) => {
 
 // Redirect from shortURL to longURL
 app.get("/u/:shortURL", (req, res) => {
-  // let shortURL = req.params.id;
+  let shortURL = req.params.shortURL;
+  console.log(shortURL);
   // console.log("shortURL "+req.params.shortURL);
-  let longURL = urlDatabase[req.params.shortURL].longURL;
+  let longURL = urlDatabase[shortURL].longURL;
   // console.log("longURL  "+longURL);
+  console.log(urlDatabase);
   res.redirect(longURL);
 });
 
 // Delete URL
 app.post("/urls/:id/delete", (req, res) => {
   let shortURL = req.params.id;
+  let longURL= urlDatabase[shortURL].longURL
   let user = findLoggedInUser(req.cookies.userKey);
     if (user.id === urlDatabase[shortURL].userID) {
       delete urlDatabase[shortURL];
@@ -179,12 +199,13 @@ app.post("/urls/:id/delete", (req, res) => {
 // Update the long URL
 app.post("/urls/:id", (req, res) => {
   let shortURL = req.params.id;
-  let longURL = req.body.longURL;
+  let longURL = req.body.longURL
   let user = findLoggedInUser(req.cookies.userKey);
     if (user.id !== urlDatabase[shortURL].userID) {
       res.sendStatus(403);
-    } else
+    } else {
       urlDatabase[shortURL].longURL = longURL
+    }
   res.redirect("/urls");
 });
 
@@ -192,6 +213,7 @@ app.post("/urls/:id", (req, res) => {
 app.post("/login", (req ,res) => {
   let userEmail = req.body.email;
   let user = findUser(req.body.email, req.body.password);
+  console.log(user)
   if (user === 'User not found') {
     res.sendStatus(403);
   } else if (user === 'Password incorrect') {
@@ -199,6 +221,7 @@ app.post("/login", (req ,res) => {
   } else {
     res.cookie("userKey", user.id);
     res.redirect("/urls", 302);
+    console.log(users);
   }
 });
 
@@ -221,8 +244,9 @@ function findUser (email, password) {
   for (let userID in users) {
     // if (users.hasOwnProperty(userID)) {
       if (users[userID].email === email) {
-        if (users[userID].password === password) {
+        if (bcrypt.compareSync(password, users[userID].password)) {
           result = users[userID];
+          return result;
         } else {
           result = "Password incorrect";
         }
@@ -245,3 +269,12 @@ function findLoggedInUser (cookie) {
   }
   return foundUser;
 }
+
+function urlsForUser(id) {
+  let visibleURLS = {}
+  for (let urlID in urlDatabase) {
+    if (urlDatabase[urlID].userID === id)
+      visibleURLS[urlID] = urlDatabase[urlID];
+    }
+  return visibleURLS;
+  }
