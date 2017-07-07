@@ -28,11 +28,11 @@ const users = {
     password: "dishwasher-funk"
   },
   "testUserID": {
-    id: "testUserRandomID",
-    email: "testUser@example.com",
-    password: "snaggle_hoof"
+    id: "testUserID",
+    email: "test@example.com",
+    password: "asd"
   }
-}
+};
 
 // Listening on port...
 app.listen(PORT, () => {
@@ -114,9 +114,9 @@ app.post("/register", (req, res) => {
       if (users[userID].email === req.body.email) {
         res.sendStatus(400); //add specific message
       return;
-      }
+      };
     };
-  }
+  };
   // Check if email or password is left blank. Else add new user.
   if (req.body.email == '') {
     res.sendStatus(400); //add error message
@@ -128,7 +128,7 @@ app.post("/register", (req, res) => {
     users[userKey] = {id: userKey, email: req.body.email, password: req.body.password}
     res.cookie("userKey", userKey);
     res.redirect("/urls", 302);
-  }
+  };
 });
 
 // Redirect from shortURL to longURL
@@ -158,14 +158,20 @@ app.post("/urls/:id", (req, res) => {
 // Allow user to add username
 app.post("/login", (req ,res) => {
   let userEmail = req.body.email;
-  res.cookie("email", userEmail);
-  // console.log(username);
-  res.redirect("/urls");
+  let user = findUser(req.body.email, req.body.password);
+  if (user === 'User not found') {
+    res.sendStatus(403)
+  } else if (user === 'Password incorrect') {
+    res.sendStatus(403)
+  } else {
+    res.cookie("userKey", user.id);
+    res.redirect("/urls", 302);
+  }
 });
 
 // Allow user to logout & clear username. Redirect to /urls where they may input new username
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("userKey");
   res.redirect("/urls");
 });
 
@@ -174,8 +180,23 @@ function generateRandomString(length, chars) {
   let result = '';
   for (let i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
   return result;
-}
+};
 
-// function findUser (email, password) {
-//   return users.find((user) => user.email == email && user.password == password);
-// };
+// Check if user email exists and password is correct
+function findUser (email, password) {
+  let result = '';
+  for (let userID in users) {
+    // if (users.hasOwnProperty(userID)) {
+      if (users[userID].email === email) {
+        if (users[userID].password === password) {
+          result = users[userID];
+        } else {
+          result = "Password incorrect";
+        }
+      } else {
+        result = "User not found";
+      }
+  // };
+  };
+  return result;
+}
