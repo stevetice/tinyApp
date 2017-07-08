@@ -6,8 +6,8 @@ const bcrypt = require('bcrypt');
 // Set view engine
 app.set("view engine", "ejs");
 
-const cookieParser = require("cookie-parser");
-app.use(cookieParser());
+// const cookieParser = require("cookie-parser");
+// app.use(cookieParser());
 
 const cookieSession = require("cookie-session");
 app.use(cookieSession({
@@ -60,13 +60,14 @@ app.get("/urls.json", (req, res) => {
 
 // List long and short URLs
 app.get("/urls", (req, res) => {
-  let user = findLoggedInUser(req.cookies.userKey);
+  let cookieID = req.session.user_id;
+  let user = findLoggedInUser(cookieID);
   if (!user) {
     res.redirect("login");
     return;
   }
   let templateVars = {
-    username: req.cookies["userKey"],
+    username: cookieID,
     urls: urlsForUser(user.id),
     user: user
   };
@@ -77,10 +78,11 @@ app.get("/urls", (req, res) => {
 
 // User registration page
 app.get("/register", (req, res) => {
+  let cookieID = req.session.user_id;
   let templateVars = {
-    username: req.cookies["userKey"],
+    username: cookieID,
     urls: urlDatabase,
-    user: users[req.cookies["userKey"]]
+    user: users[cookieID]
   };
 
   res.render("urls_register", templateVars);
@@ -88,21 +90,23 @@ app.get("/register", (req, res) => {
 
 // User Login page
 app.get("/login", (req, res) => {
+  let cookieID = req.session.user_id;
   let templateVars = {
-    username: req.cookies["userKey"],
+    username: cookieID,
     urls: urlDatabase,
-    user: users[req.cookies["userKey"]]
+    user: users[cookieID]
   };
   res.render("urls_login", templateVars);
 });
 
 // Type in long URL to creat new short URL
 app.get("/urls/new", (req, res) => {
+  let cookieID = req.session.user_id;
   let templateVars = {
-    username: req.cookies["userKey"],
-    user: users[req.cookies["userKey"]]
+    username: cookieID,
+    user: users[cookieID]
   };
-  let user = findLoggedInUser(req.cookies.userKey);
+  let user = findLoggedInUser(cookieID);
     if (user) {
       res.render("urls_new", templateVars);
     } else {
@@ -112,7 +116,8 @@ app.get("/urls/new", (req, res) => {
 
 // GO to page for shortURL
 app.get("/urls/:id", (req, res) => {
-  let user = findLoggedInUser(req.cookies.userKey);
+  let cookieID = req.session.user_id;
+  let user = findLoggedInUser(cookieID);
   if (!user) {
       res.sendStatus(403);
       return;
@@ -120,10 +125,10 @@ app.get("/urls/:id", (req, res) => {
   let shortURL = req.params.id;
   let longURL = urlDatabase[shortURL].longURL
   let templateVars = {
-    username: req.cookies["userKey"],
+    username: cookieID,
     shortURL: shortURL,
     longURL: longURL,
-    user: users[req.cookies["userKey"]]
+    user: users[cookieID]
   };
 
   if (user.id === urlDatabase[shortURL].userID) {
@@ -136,16 +141,18 @@ app.get("/urls/:id", (req, res) => {
 
 // Generate random unique key for shortURL
 app.post("/urls", (req, res) => {
+  let cookieID = req.session.user_id;
   let urlKey = generateRandomString(6, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
   // console.log(urlKey);
   // console.log(req.body);  // debug statement to see POST parameters
-  urlDatabase[urlKey] = {id: urlKey, longURL: req.body['longURL'], userID: req.cookies.userKey}
+  urlDatabase[urlKey] = {id: urlKey, longURL: req.body['longURL'], userID: cookieID}
   console.log(urlDatabase);
-  res.redirect("http://localhost:8080/urls/" + urlKey); // Respond with 'Ok' (we will replace this)
+  res.redirect("http://localhost:8080/urls/" + urlKey);
 });
 
 // User registration
 app.post("/register", (req, res) => {
+  let cookieID = req.session.user_id;
   let userKey = generateRandomString(6, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
    // Check if user email already exists in database
   for (let userID in users) {
@@ -166,7 +173,7 @@ app.post("/register", (req, res) => {
   } else {
     let hashedPassword = bcrypt.hashSync(req.body.password, 10)
     users[userKey] = {id: userKey, email: req.body.email, password: hashedPassword}
-    res.cookie("userKey", userKey);
+    req.session.user_id = userKey;
     res.redirect("/urls", 302);
   };
 });
@@ -174,19 +181,18 @@ app.post("/register", (req, res) => {
 // Redirect from shortURL to longURL
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
-  console.log(shortURL);
-  // console.log("shortURL "+req.params.shortURL);
+    console.log(shortURL);
   let longURL = urlDatabase[shortURL].longURL;
-  // console.log("longURL  "+longURL);
-  console.log(urlDatabase);
+    console.log(urlDatabase);
   res.redirect(longURL);
 });
 
 // Delete URL
 app.post("/urls/:id/delete", (req, res) => {
+  let cookieID = req.session.user_id;
   let shortURL = req.params.id;
   let longURL= urlDatabase[shortURL].longURL
-  let user = findLoggedInUser(req.cookies.userKey);
+  let user = findLoggedInUser(cookieID);
     if (user.id === urlDatabase[shortURL].userID) {
       delete urlDatabase[shortURL];
       res.redirect("/urls");
@@ -198,9 +204,10 @@ app.post("/urls/:id/delete", (req, res) => {
 
 // Update the long URL
 app.post("/urls/:id", (req, res) => {
+  let cookieID = req.session.user_id;
   let shortURL = req.params.id;
   let longURL = req.body.longURL
-  let user = findLoggedInUser(req.cookies.userKey);
+  let user = findLoggedInUser(cookieID);
     if (user.id !== urlDatabase[shortURL].userID) {
       res.sendStatus(403);
     } else {
@@ -211,6 +218,7 @@ app.post("/urls/:id", (req, res) => {
 
 // Allow user to add username
 app.post("/login", (req ,res) => {
+  let cookieID = req.session.user_id;
   let userEmail = req.body.email;
   let user = findUser(req.body.email, req.body.password);
   console.log(user)
@@ -219,7 +227,8 @@ app.post("/login", (req ,res) => {
   } else if (user === 'Password incorrect') {
     res.sendStatus(403);
   } else {
-    res.cookie("userKey", user.id);
+    debugger
+    req.session.user_id = user.id;
     res.redirect("/urls", 302);
     console.log(users);
   }
@@ -227,7 +236,7 @@ app.post("/login", (req ,res) => {
 
 // Allow user to logout & clear username. Redirect to /urls where they may input new username
 app.post("/logout", (req, res) => {
-  res.clearCookie("userKey");
+  req.session = null;
   res.redirect("/urls");
 });
 
@@ -260,10 +269,11 @@ function findUser (email, password) {
 
 
 // Find logged in user and return
-function findLoggedInUser (cookie) {
+function findLoggedInUser (id) {
   let foundUser;
   for (let userID in users) {
-    if (users[userID].id === cookie) {
+    if (users[userID].id === id) {
+      console.log(id, "   ", users[userID].id)
       foundUser = users[userID];
     }
   }
